@@ -2,9 +2,9 @@ use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::render::WindowCanvas;
-use space_invaders::game_characters::alien::Alien;
-use space_invaders::game_characters::bullet::Bullet;
-use space_invaders::game_characters::shooter::Shooter;
+use space_invaders::game_characters::alien::{Alien, ALIEN_STEP_DISTANCE};
+use space_invaders::game_characters::bullet::{Bullet, BULLET_STEP_DISTANCE};
+use space_invaders::game_characters::shooter::{Shooter, SHOOTER_STEP_DISTANCE};
 use space_invaders::Direction;
 use std::thread::sleep;
 use std::time::Duration;
@@ -64,7 +64,7 @@ pub fn main() {
                     shooter.direction = Direction::Left;
 
                     // step the shooter
-                    if shooter.x_pos - STEP_DISTANCE >= 0 {
+                    if shooter.x_pos - SHOOTER_STEP_DISTANCE >= 0 {
                         shooter.step();
                     }
                 }
@@ -75,7 +75,7 @@ pub fn main() {
                     shooter.direction = Direction::Right;
 
                     // step the shooter
-                    if shooter.x_pos + STEP_DISTANCE + shooter.width as i32
+                    if shooter.x_pos + SHOOTER_STEP_DISTANCE + shooter.width as i32
                         <= canvas.viewport().width() as i32
                     {
                         shooter.step();
@@ -129,14 +129,14 @@ pub fn main() {
         // remove bullets that have/will reached the top
         active_bullets = active_bullets
             .into_iter()
-            .filter(|bullet| bullet.y_pos - STEP_DISTANCE >= 0)
+            .filter(|bullet| bullet.y_pos - BULLET_STEP_DISTANCE >= 0)
             .collect();
 
         // shift all aliens down and switch directions if any of them touched a side
         if aliens.iter().any(|alien| {
-            alien.direction == Direction::DownLeft && alien.x_pos - STEP_DISTANCE <= 0
+            alien.direction == Direction::DownLeft && alien.x_pos - ALIEN_STEP_DISTANCE <= 0
                 || alien.direction == Direction::DownRight
-                    && alien.x_pos + alien.width as i32 + STEP_DISTANCE
+                    && alien.x_pos + alien.width as i32 + ALIEN_STEP_DISTANCE
                         >= canvas.viewport().width() as i32
         }) {
             aliens = aliens
@@ -193,6 +193,3 @@ fn draw_screen(
         alien.draw(canvas);
     }
 }
-
-const STEP_DISTANCE: i32 = 10;
-const ALIEN_STEP_DISTANCE: f64 = STEP_DISTANCE as f64 * 0.1;

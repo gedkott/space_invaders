@@ -3,7 +3,7 @@ use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::WindowCanvas;
 
-const ALIEN_STEP_DISTANCE: f64 = 10f64 * 0.1;
+pub const ALIEN_STEP_DISTANCE: i32 = 1;
 
 #[derive(PartialEq)]
 pub struct Alien {

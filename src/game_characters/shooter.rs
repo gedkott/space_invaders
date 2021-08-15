@@ -3,7 +3,7 @@ use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::WindowCanvas;
 
-const STEP_DISTANCE: i32 = 10;
+pub const SHOOTER_STEP_DISTANCE: i32 = 10;
 
 pub struct Shooter {
     pub x_pos: i32,
@@ -26,10 +26,10 @@ impl Shooter {
     pub fn step(&mut self) {
         match self.direction {
             Direction::Right => {
-                self.x_pos += STEP_DISTANCE;
+                self.x_pos += SHOOTER_STEP_DISTANCE;
             }
             Direction::Left => {
-                self.x_pos -= STEP_DISTANCE;
+                self.x_pos -= SHOOTER_STEP_DISTANCE;
             }
             _ => (),
         }

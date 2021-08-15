@@ -3,7 +3,7 @@ use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::WindowCanvas;
 
-const STEP_DISTANCE: i32 = 10;
+pub const BULLET_STEP_DISTANCE: i32 = 10;
 
 #[derive(PartialEq)]
 pub struct Bullet {
@@ -26,7 +26,7 @@ impl Bullet {
 
     pub fn step(&mut self) {
         if self.direction == Direction::Up {
-            self.y_pos -= STEP_DISTANCE;
+            self.y_pos -= BULLET_STEP_DISTANCE;
         }
     }
 }
