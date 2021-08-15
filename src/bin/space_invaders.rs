@@ -1,10 +1,11 @@
-extern crate sdl2;
-
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
-use sdl2::rect::Rect;
 use sdl2::render::WindowCanvas;
+use space_invaders::game_characters::alien::Alien;
+use space_invaders::game_characters::bullet::Bullet;
+use space_invaders::game_characters::shooter::Shooter;
+use space_invaders::Direction;
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -128,32 +129,16 @@ pub fn main() {
         // remove bullets that have/will reached the top
         active_bullets = active_bullets
             .into_iter()
-            .filter(|bullet| {
-                if bullet.y_pos - STEP_DISTANCE >= 0 {
-                    true
-                } else {
-                    false
-                }
-            })
+            .filter(|bullet| bullet.y_pos - STEP_DISTANCE >= 0)
             .collect();
 
         // shift all aliens down and switch directions if any of them touched a side
-        if aliens
-            .iter()
-            .find(|alien| {
-                if alien.direction == Direction::DownLeft && alien.x_pos - STEP_DISTANCE <= 0
-                    || alien.direction == Direction::DownRight
-                        && alien.x_pos + alien.width as i32 + STEP_DISTANCE
-                            >= canvas.viewport().width() as i32
-                {
-                    // this alien is touching a side
-                    true
-                } else {
-                    false
-                }
-            })
-            .is_some()
-        {
+        if aliens.iter().any(|alien| {
+            alien.direction == Direction::DownLeft && alien.x_pos - STEP_DISTANCE <= 0
+                || alien.direction == Direction::DownRight
+                    && alien.x_pos + alien.width as i32 + STEP_DISTANCE
+                        >= canvas.viewport().width() as i32
+        }) {
             aliens = aliens
                 .into_iter()
                 .map(|mut alien| {
@@ -209,106 +194,5 @@ fn draw_screen(
     }
 }
 
-#[derive(PartialEq)]
-enum Direction {
-    Up,
-    Left,
-    Right,
-    None,
-    DownLeft,
-    DownRight,
-}
-
-struct Shooter {
-    x_pos: i32,
-    y_pos: i32,
-    width: u32,
-    height: u32,
-    direction: Direction,
-}
-
-struct Bullet {
-    x_pos: i32,
-    y_pos: i32,
-    width: u32,
-    height: u32,
-    direction: Direction,
-}
-
-#[derive(PartialEq)]
-struct Alien {
-    x_pos: i32,
-    y_pos: i32,
-    width: u32,
-    height: u32,
-    direction: Direction,
-}
-
 const STEP_DISTANCE: i32 = 10;
 const ALIEN_STEP_DISTANCE: f64 = STEP_DISTANCE as f64 * 0.1;
-
-impl Shooter {
-    pub fn draw(&self, canvas: &mut WindowCanvas) {
-        // change the color of our drawing with a gold-color ...
-        canvas.set_draw_color(Color::RGB(255, 210, 0));
-        // A draw a rectangle which almost fills our window with it !
-        canvas
-            .fill_rect(Rect::new(self.x_pos, self.y_pos, self.width, self.height))
-            .unwrap();
-    }
-
-    pub fn step(&mut self) {
-        match self.direction {
-            Direction::Right => {
-                self.x_pos += STEP_DISTANCE;
-            }
-            Direction::Left => {
-                self.x_pos -= STEP_DISTANCE;
-            }
-            _ => (),
-        }
-    }
-}
-
-impl Bullet {
-    pub fn draw(&self, canvas: &mut WindowCanvas) {
-        // change the color of our drawing with a white-color ...
-        canvas.set_draw_color(Color::RGB(0, 0, 0));
-
-        canvas
-            .fill_rect(Rect::new(self.x_pos, self.y_pos, self.width, self.height))
-            .unwrap();
-    }
-
-    pub fn step(&mut self) {
-        match self.direction {
-            Direction::Up => {
-                self.y_pos -= STEP_DISTANCE;
-            }
-            _ => (),
-        }
-    }
-}
-
-impl Alien {
-    pub fn draw(&self, canvas: &mut WindowCanvas) {
-        // change the color of our drawing with a white-color ...
-        canvas.set_draw_color(Color::RGB(255, 255, 255));
-
-        canvas
-            .fill_rect(Rect::new(self.x_pos, self.y_pos, self.width, self.height))
-            .unwrap();
-    }
-
-    pub fn step(&mut self) {
-        match self.direction {
-            Direction::DownLeft => {
-                self.x_pos -= ALIEN_STEP_DISTANCE as i32;
-            }
-            Direction::DownRight => {
-                self.x_pos += ALIEN_STEP_DISTANCE as i32;
-            }
-            _ => (),
-        }
-    }
-}
