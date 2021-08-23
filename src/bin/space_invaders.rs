@@ -23,13 +23,19 @@ pub fn main() {
     let mut canvas = window.into_canvas().build().unwrap();
     let shooter_width = 50;
     let shooter_height = 25;
-    let mut shooter = Shooter {
-        x_pos: (canvas.viewport().width() / 2) as i32 - (shooter_width / 2) as i32,
-        y_pos: canvas.viewport().height() as i32 - (shooter_height as i32) - 10,
-        width: shooter_width,
-        height: shooter_height,
-        direction: Direction::None,
-    };
+    // let mut shooter = Shooter {
+    //     x_pos: (canvas.viewport().width() / 2) as i32 - (shooter_width / 2) as i32,
+    //     y_pos: canvas.viewport().height() as i32 - (shooter_height as i32) - 10,
+    //     width: shooter_width,
+    //     height: shooter_height,
+    //     direction: Direction::None,
+    // };
+    let mut shooter = Shooter::new();
+    shooter
+        .starting_x_at((canvas.viewport().width() / 2) as i32 - (shooter_width / 2) as i32)
+        .starting_y_at(canvas.viewport().height() as i32 - (shooter_height as i32) - 10)
+        .with_width(shooter_width)
+        .with_height(shooter_height);
 
     let mut active_bullets = Vec::new();
 
