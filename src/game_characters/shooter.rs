@@ -11,6 +11,18 @@ pub struct Shooter {
 }
 
 impl Shooter {
+    pub fn new(canvas_width: i32, canvas_height: i32) -> Self {
+        let shooter_width = 50;
+        let shooter_height = 25;
+        Shooter {
+            x_pos: (canvas_width / 2) as i32 - (shooter_width / 2) as i32,
+            y_pos: canvas_height as i32 - (shooter_height as i32) - 10,
+            width: shooter_width,
+            height: shooter_height,
+            direction: Direction::None,
+        }
+    }
+
     pub fn step(&mut self) {
         match self.direction {
             Direction::Right => {
