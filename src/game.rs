@@ -1,5 +1,6 @@
 use std::{collections::HashSet, thread::sleep, time::Duration};
 
+use rand::Rng;
 use sdl2::{event::Event, keyboard::Keycode, pixels::Color, EventPump};
 
 use crate::{
@@ -17,7 +18,8 @@ pub struct Game {
     drawing_board: DrawingBoard,
     shooter: Shooter,
     alien_group: AlienGroup,
-    bullets: Vec<Bullet>,
+    shooter_bullets: Vec<Bullet>,
+    alien_bullets: Vec<Bullet>,
     score_board: ScoreBoard,
     event_pump: EventPump,
 }
@@ -50,7 +52,8 @@ impl Game {
             drawing_board,
             shooter,
             alien_group,
-            bullets: active_bullets,
+            shooter_bullets: active_bullets,
+            alien_bullets: vec![],
             score_board,
             event_pump,
         }
@@ -66,7 +69,7 @@ impl Game {
 
         let score_board = &mut self.score_board;
 
-        self.bullets.retain(|bullet| {
+        self.shooter_bullets.retain(|bullet| {
             let mut is_destroyed = false;
             aliens.retain(|alien| {
                 if bullet.y_pos <= alien.y_pos + alien.height as i32
@@ -90,7 +93,7 @@ impl Game {
         });
 
         // remove bullets that have/will reached the top
-        self.bullets
+        self.shooter_bullets
             .retain(|bullet| bullet.y_pos - BULLET_STEP_DISTANCE >= 0);
     }
 
@@ -132,7 +135,7 @@ impl Game {
                 height: 10,
                 direction: Direction::Up,
             };
-            self.bullets.push(bullet);
+            self.shooter_bullets.push(bullet);
         }
     }
 
@@ -143,7 +146,11 @@ impl Game {
 
         self.shooter.render(&mut canvas);
 
-        for bullet in self.bullets.iter_mut() {
+        for bullet in self.shooter_bullets.iter_mut() {
+            bullet.render(&mut canvas);
+        }
+
+        for bullet in self.alien_bullets.iter_mut() {
             bullet.render(&mut canvas);
         }
 
@@ -177,6 +184,21 @@ impl Game {
         }
     }
 
+    fn process_alien_shots(&mut self) {
+        let aliens = &self.alien_group.aliens;
+        let no_aliens = aliens.len();
+        let rand = rand::thread_rng().gen_range(0..no_aliens);
+        let shooting_alien = aliens.get(rand).unwrap();
+        let bullet = Bullet {
+            x_pos: shooting_alien.x_pos + (shooting_alien.width as i32 / 2),
+            y_pos: shooting_alien.y_pos + shooting_alien.height as i32,
+            width: 2,
+            height: 10,
+            direction: Direction::Down,
+        };
+        self.alien_bullets.push(bullet);
+    }
+
     pub fn run(mut self) {
         let mut i = 0;
 
@@ -201,8 +223,15 @@ impl Game {
 
             self.manage_canvas_boundaries();
 
+            self.process_alien_shots();
+
             // step remaining bullets
-            for bullet in self.bullets.iter_mut() {
+            for bullet in self.shooter_bullets.iter_mut() {
+                bullet.step();
+            }
+
+            // step remaining bullets
+            for bullet in self.alien_bullets.iter_mut() {
                 bullet.step();
             }
 

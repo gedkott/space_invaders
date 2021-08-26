@@ -13,8 +13,14 @@ pub struct Bullet {
 
 impl Bullet {
     pub fn step(&mut self) {
-        if self.direction == Direction::Up {
-            self.y_pos -= BULLET_STEP_DISTANCE;
+        match self.direction {
+            Direction::Up => {
+                self.y_pos -= BULLET_STEP_DISTANCE;
+            }
+            Direction::Down => {
+                self.y_pos += BULLET_STEP_DISTANCE;
+            }
+            _ => (),
         }
     }
 }
