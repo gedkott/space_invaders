@@ -4,6 +4,7 @@ use sdl2::pixels::Color;
 use sdl2::render::WindowCanvas;
 use space_invaders::game_characters::alien::{Alien, ALIEN_STEP_DISTANCE};
 use space_invaders::game_characters::bullet::{Bullet, BULLET_STEP_DISTANCE};
+use space_invaders::game_characters::renderers::Renderable;
 use space_invaders::game_characters::shooter::{Shooter, SHOOTER_STEP_DISTANCE};
 use space_invaders::Direction;
 use std::thread::sleep;
@@ -98,7 +99,6 @@ pub fn main() {
                 _ => {}
             }
         }
-        // The rest of the game loop goes here...
 
         // remove bullets and aliens that will/have collided
         // Did anything collide?
@@ -185,12 +185,14 @@ fn draw_screen(
 ) {
     canvas.set_draw_color(Color::RGB(i, 64, 255 - i));
     canvas.clear();
-    shooter.draw(canvas);
+
+    shooter.render(canvas);
+
     for bullet in active_bullets.iter_mut() {
-        bullet.draw(canvas);
+        bullet.render(canvas);
     }
 
     for alien in aliens.iter_mut() {
-        alien.draw(canvas);
+        alien.render(canvas);
     }
 }
