@@ -22,6 +22,7 @@ pub struct Game {
     alien_bullets: Vec<Bullet>,
     score_board: ScoreBoard,
     event_pump: EventPump,
+    shooter_hit_no: u32
 }
 
 impl Default for Game {
@@ -56,6 +57,7 @@ impl Game {
             alien_bullets: vec![],
             score_board,
             event_pump,
+            shooter_hit_no: 0
         }
     }
 
@@ -91,6 +93,34 @@ impl Game {
             });
             !is_destroyed
         });
+
+        let shooter = &self.shooter;
+        let mut shooter_hit_no = 0;
+        let been_shot = self.shooter_hit_no;
+        let shooter_x = shooter.x_pos;
+        let shooter_y = shooter.y_pos;
+        let shooter_box = (
+            (shooter_x, shooter_y),
+            (
+                shooter_x + shooter.width as i32,
+                shooter_y + shooter.height as i32,
+            ),
+        );
+        self.alien_bullets.retain(|b| {
+            let bullet_box = (
+                (b.x_pos, b.y_pos),
+                (b.x_pos + b.width as i32, b.y_pos + b.height as i32),
+            );
+
+            if overlap(shooter_box, bullet_box) {
+                shooter_hit_no += 1;
+                false
+            } else {
+                true
+            }
+        });
+
+        self.shooter_hit_no += shooter_hit_no;
     }
 
     fn process_key_presses(&mut self) {
@@ -260,4 +290,14 @@ impl Game {
             sleep(Duration::new(0, 1_000_000_000u32 / 60));
         }
     }
+}
+
+fn overlap(
+    one_box: ((i32, i32), (i32, i32)),
+    other_box: ((i32, i32), (i32, i32)),
+) -> bool {
+    one_box.0 .0 < other_box.1 .0
+        && one_box.1 .0 > other_box.0 .0
+        && one_box.0 .1 < other_box.1 .1
+        && one_box.1 .1 > other_box.0 .1
 }
