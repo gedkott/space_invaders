@@ -22,7 +22,7 @@ pub struct Game {
     alien_bullets: Vec<Bullet>,
     score_board: ScoreBoard,
     event_pump: EventPump,
-    shooter_hit_no: u32
+    shooter_hit_no: u32,
 }
 
 impl Default for Game {
@@ -57,7 +57,7 @@ impl Game {
             alien_bullets: vec![],
             score_board,
             event_pump,
-            shooter_hit_no: 0
+            shooter_hit_no: 0,
         }
     }
 
@@ -96,7 +96,6 @@ impl Game {
 
         let shooter = &self.shooter;
         let mut shooter_hit_no = 0;
-        let been_shot = self.shooter_hit_no;
         let shooter_x = shooter.x_pos;
         let shooter_y = shooter.y_pos;
         let shooter_box = (
@@ -292,10 +291,7 @@ impl Game {
     }
 }
 
-fn overlap(
-    one_box: ((i32, i32), (i32, i32)),
-    other_box: ((i32, i32), (i32, i32)),
-) -> bool {
+fn overlap(one_box: ((i32, i32), (i32, i32)), other_box: ((i32, i32), (i32, i32))) -> bool {
     one_box.0 .0 < other_box.1 .0
         && one_box.1 .0 > other_box.0 .0
         && one_box.0 .1 < other_box.1 .1
