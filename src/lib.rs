@@ -1,4 +1,10 @@
-pub mod game_characters;
+use sdl2::{pixels, rect::Rect, video::Window, Sdl};
+
+use crate::game_characters::renderers::Renderable;
+
+mod game_characters;
+
+pub mod game;
 
 #[derive(PartialEq)]
 pub enum Direction {
@@ -9,10 +15,6 @@ pub enum Direction {
     DownLeft,
     DownRight,
 }
-
-use sdl2::{pixels, rect::Rect};
-
-use crate::game_characters::renderers::Renderable;
 
 pub struct ScoreBoard {
     pub score: usize,
@@ -37,5 +39,33 @@ impl Renderable for ScoreBoard {
         canvas
             .copy(&texture, None, Some(Rect::new(10, 10, 100, 100)))
             .unwrap();
+    }
+}
+pub struct DrawingBoard {
+    pub sdl_context: Sdl,
+    pub canvas: sdl2::render::Canvas<Window>,
+}
+
+impl DrawingBoard {
+    pub fn new() -> DrawingBoard {
+        let sdl_context = sdl2::init().unwrap();
+        let video_subsystem = sdl_context.video().unwrap();
+
+        let window = video_subsystem
+            .window("space_invaders", 800, 600)
+            .position_centered()
+            .build()
+            .unwrap();
+        let canvas = window.into_canvas().build().unwrap();
+        DrawingBoard {
+            canvas,
+            sdl_context,
+        }
+    }
+}
+
+impl Default for DrawingBoard {
+    fn default() -> Self {
+        Self::new()
     }
 }
