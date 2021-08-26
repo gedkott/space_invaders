@@ -91,10 +91,6 @@ impl Game {
             });
             !is_destroyed
         });
-
-        // remove bullets that have/will reached the top
-        self.shooter_bullets
-            .retain(|bullet| bullet.y_pos - BULLET_STEP_DISTANCE >= 0);
     }
 
     fn process_key_presses(&mut self) {
@@ -178,31 +174,47 @@ impl Game {
                 };
 
                 // shift down
-                const ALIEN_VERTICAL_STEP_DISTANCE: i32 = 9;
+                const ALIEN_VERTICAL_STEP_DISTANCE: i32 = 18;
                 alien.y_pos += ALIEN_VERTICAL_STEP_DISTANCE as i32;
             }
         }
+
+        // remove bullets that have/will reached the top
+        self.shooter_bullets
+            .retain(|bullet| bullet.y_pos - BULLET_STEP_DISTANCE >= 0);
+
+        // remove bullets that have/will reached the bottom
+        let viewport_height = self.drawing_board.canvas.viewport().height();
+        self.alien_bullets
+            .retain(|bullet| bullet.y_pos + BULLET_STEP_DISTANCE <= viewport_height as i32);
     }
 
     fn process_alien_shots(&mut self) {
         let aliens = &self.alien_group.aliens;
         let no_aliens = aliens.len();
-        let rand = rand::thread_rng().gen_range(0..no_aliens);
-        let shooting_alien = aliens.get(rand).unwrap();
-        let bullet = Bullet {
-            x_pos: shooting_alien.x_pos + (shooting_alien.width as i32 / 2),
-            y_pos: shooting_alien.y_pos + shooting_alien.height as i32,
-            width: 2,
-            height: 10,
-            direction: Direction::Down,
-        };
-        self.alien_bullets.push(bullet);
+        if no_aliens != 0 {
+            let rand = rand::thread_rng().gen_range(0..no_aliens);
+            let shooting_alien = aliens.get(rand).unwrap();
+            let bullet = Bullet {
+                x_pos: shooting_alien.x_pos + (shooting_alien.width as i32 / 2),
+                y_pos: shooting_alien.y_pos + shooting_alien.height as i32,
+                width: 2,
+                height: 10,
+                direction: Direction::Down,
+            };
+            self.alien_bullets.push(bullet);
+        }
     }
 
     pub fn run(mut self) {
         let mut i = 0;
 
         'running: loop {
+            println!(
+                "total number of bullets: {}",
+                self.alien_bullets.len() + self.shooter_bullets.len()
+            );
+
             i = (i + 1) % 255;
 
             // watch out for events; specifically if the quit button (ESC) was pressed
