@@ -150,7 +150,8 @@ pub fn main() {
                     };
 
                     // shift down
-                    alien.y_pos += ALIEN_STEP_DISTANCE as i32;
+                    const ALIEN_VERTICAL_STEP_DISTANCE: i32 = 9;
+                    alien.y_pos += ALIEN_VERTICAL_STEP_DISTANCE as i32;
                     alien
                 })
                 .collect();
