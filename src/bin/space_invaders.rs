@@ -7,8 +7,12 @@ use space_invaders::game_characters::bullet::{Bullet, BULLET_STEP_DISTANCE};
 use space_invaders::game_characters::renderers::Renderable;
 use space_invaders::game_characters::shooter::{Shooter, SHOOTER_STEP_DISTANCE};
 use space_invaders::Direction;
+use space_invaders::ScoreBoard;
+use std::collections::HashSet;
 use std::thread::sleep;
 use std::time::Duration;
+
+const SCORE_INCREMENT: usize = 10;
 
 pub fn main() {
     let sdl_context = sdl2::init().unwrap();
@@ -36,21 +40,26 @@ pub fn main() {
     let alien_width: u32 = 25;
     let alien_height = 25;
     let mut aliens = Vec::new();
-    for i in 0..10 {
-        let alien = Alien {
-            x_pos: (i * (10 + alien_width as i32)) + 10,
-            y_pos: 10 + alien_width as i32 + 10,
-            width: alien_width,
-            height: alien_height,
-            direction: Direction::DownRight,
-        };
-        aliens.push(alien);
+    for i in 0..5 {
+        for j in 0..10 {
+            let alien = Alien {
+                x_pos: (j * (10 + alien_width as i32)) + 10,
+                y_pos: (i * (10 + alien_width as i32)) + 10,
+                width: alien_width,
+                height: alien_height,
+                direction: Direction::DownRight,
+            };
+            aliens.push(alien);
+        }
     }
+
+    let mut score_board = ScoreBoard { score: 0 };
 
     let mut event_pump = sdl_context.event_pump().unwrap();
     let mut i = 0;
     'running: loop {
         i = (i + 1) % 255;
+        // let keyboard_state = KeyboardState::new(&event_pump);
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit { .. }
@@ -58,46 +67,46 @@ pub fn main() {
                     keycode: Some(Keycode::Escape),
                     ..
                 } => break 'running,
-                Event::KeyDown {
-                    keycode: Some(Keycode::Left),
-                    ..
-                } => {
-                    shooter.direction = Direction::Left;
-
-                    // step the shooter
-                    if shooter.x_pos - SHOOTER_STEP_DISTANCE >= 0 {
-                        shooter.step();
-                    }
-                }
-                Event::KeyDown {
-                    keycode: Some(Keycode::Right),
-                    ..
-                } => {
-                    shooter.direction = Direction::Right;
-
-                    // step the shooter
-                    if shooter.x_pos + SHOOTER_STEP_DISTANCE + shooter.width as i32
-                        <= canvas.viewport().width() as i32
-                    {
-                        shooter.step();
-                    }
-                }
-                Event::KeyDown {
-                    keycode: Some(Keycode::Space),
-                    ..
-                } => {
-                    let bullet = Bullet {
-                        x_pos: shooter.x_pos + (shooter.width as i32 / 2),
-                        y_pos: shooter.y_pos,
-                        width: 2,
-                        height: 10,
-                        direction: Direction::Up,
-                    };
-                    active_bullets.push(bullet);
-                }
-
                 _ => {}
             }
+        }
+
+        // Create a set of pressed Keys.
+        let pressed_keys: HashSet<Keycode> = event_pump
+            .keyboard_state()
+            .pressed_scancodes()
+            .filter_map(Keycode::from_scancode)
+            .collect();
+
+        if pressed_keys.contains(&Keycode::Right) {
+            shooter.direction = Direction::Right;
+
+            // step the shooter
+            if shooter.x_pos + SHOOTER_STEP_DISTANCE + shooter.width as i32
+                <= canvas.viewport().width() as i32
+            {
+                shooter.step();
+            }
+        }
+
+        if pressed_keys.contains(&Keycode::Left) {
+            shooter.direction = Direction::Left;
+
+            // step the shooter
+            if shooter.x_pos - SHOOTER_STEP_DISTANCE >= 0 {
+                shooter.step();
+            }
+        }
+
+        if pressed_keys.contains(&Keycode::Space) {
+            let bullet = Bullet {
+                x_pos: shooter.x_pos + (shooter.width as i32 / 2),
+                y_pos: shooter.y_pos,
+                width: 2,
+                height: 10,
+                direction: Direction::Up,
+            };
+            active_bullets.push(bullet);
         }
 
         // remove bullets and aliens that will/have collided
@@ -115,6 +124,7 @@ pub fn main() {
                         && bullet.x_pos <= alien.x_pos + alien.width as i32
                     {
                         is_destroyed = true;
+                        score_board.score += SCORE_INCREMENT;
                         false
                     } else {
                         true
@@ -168,7 +178,14 @@ pub fn main() {
         }
 
         // draw
-        draw_screen(&mut canvas, i, &shooter, &mut active_bullets, &mut aliens);
+        draw_screen(
+            &mut canvas,
+            i,
+            &shooter,
+            &mut active_bullets,
+            &mut aliens,
+            &score_board,
+        );
         canvas.present();
 
         // sleep?
@@ -182,6 +199,7 @@ fn draw_screen(
     shooter: &Shooter,
     active_bullets: &mut Vec<Bullet>,
     aliens: &mut Vec<Alien>,
+    score_board: &ScoreBoard,
 ) {
     canvas.set_draw_color(Color::RGB(i, 64, 255 - i));
     canvas.clear();
@@ -195,4 +213,6 @@ fn draw_screen(
     for alien in aliens.iter_mut() {
         alien.render(canvas);
     }
+
+    score_board.render(canvas);
 }
