@@ -9,7 +9,7 @@ use crate::{
         bullet::BULLET_STEP_DISTANCE, renderers::Renderable, shooter::Shooter,
         shooter::SHOOTER_STEP_DISTANCE,
     },
-    Direction, DrawingBoard, ScoreBoard,
+    DeadScreen, Direction, DrawingBoard, ScoreBoard,
 };
 
 const SCORE_INCREMENT: usize = 10;
@@ -45,7 +45,10 @@ impl Game {
 
         let alien_group = AlienGroup::new();
 
-        let score_board = ScoreBoard { score: 0 };
+        let score_board = ScoreBoard {
+            score: 0,
+            remaining_health: 0,
+        };
 
         let event_pump = drawing_board.sdl_context.event_pump().unwrap();
 
@@ -120,6 +123,11 @@ impl Game {
         });
 
         self.shooter_hit_no += shooter_hit_no;
+        score_board.remaining_health = if 50 <= self.shooter_hit_no as usize {
+            0
+        } else {
+            50 - self.shooter_hit_no as usize
+        };
     }
 
     fn process_key_presses(&mut self) {
@@ -183,7 +191,13 @@ impl Game {
             alien.render(&mut canvas);
         }
 
-        self.score_board.render(&mut canvas)
+        self.score_board.render(&mut canvas);
+
+        if self.shooter_hit_no >= 50 {
+            // draw the "you dead" screen over everything; super stupid
+            let dead_screen = DeadScreen;
+            dead_screen.render(&mut canvas);
+        }
     }
 
     fn manage_canvas_boundaries(&mut self) {
@@ -239,11 +253,6 @@ impl Game {
         let mut i = 0;
 
         'running: loop {
-            println!(
-                "total number of bullets: {}",
-                self.alien_bullets.len() + self.shooter_bullets.len()
-            );
-
             i = (i + 1) % 255;
 
             // watch out for events; specifically if the quit button (ESC) was pressed
