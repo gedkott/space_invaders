@@ -13,6 +13,7 @@ use crate::{
 };
 
 const SCORE_INCREMENT: usize = 10;
+const SHOOTER_HEALTH: u32 = 50;
 
 pub struct Game {
     drawing_board: DrawingBoard,
@@ -123,10 +124,10 @@ impl Game {
         });
 
         self.shooter_hit_no += shooter_hit_no;
-        score_board.remaining_health = if 50 <= self.shooter_hit_no as usize {
+        score_board.remaining_health = if SHOOTER_HEALTH <= self.shooter_hit_no {
             0
         } else {
-            50 - self.shooter_hit_no as usize
+            (SHOOTER_HEALTH - self.shooter_hit_no) as usize
         };
     }
 
@@ -193,7 +194,7 @@ impl Game {
 
         self.score_board.render(&mut canvas);
 
-        if self.shooter_hit_no >= 50 {
+        if self.shooter_hit_no >= SHOOTER_HEALTH {
             // draw the "you dead" screen over everything; super stupid
             let dead_screen = DeadScreen;
             dead_screen.render(&mut canvas);
