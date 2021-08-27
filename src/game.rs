@@ -235,7 +235,7 @@ impl Game {
         }
     }
 
-    pub fn run(mut self) {
+    pub fn run(&mut self) {
         let mut i = 0;
 
         'running: loop {
