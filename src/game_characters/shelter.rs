@@ -18,14 +18,14 @@ impl ShelterGroup {
         for i in 0..7 {
             let shelter_width = 100;
             let shelter_height = 75;
-            let alien = Shelter {
+            let shelter = Shelter {
                 x_pos: (i * (10 + shelter_width as i32)) + 10,
                 y_pos: (300 + shelter_height as i32) + 10,
                 width: shelter_width,
                 height: shelter_height,
                 health: SHELTER_HEALTH,
             };
-            shelters.push(alien);
+            shelters.push(shelter);
         }
         ShelterGroup { shelters }
     }
