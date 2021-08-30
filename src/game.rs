@@ -147,29 +147,29 @@ impl Game {
                     shelter.y_pos + shelter.height as i32,
                 ),
             );
-            alien_bs.retain(|b| -> bool {
+
+            let f = |b: &Bullet| -> bool {
                 let bullet_box = (
                     (b.x_pos, b.y_pos),
                     (b.x_pos + b.width as i32, b.y_pos + b.height as i32),
                 );
-                if overlap(shelter_box, bullet_box) {
+                !overlap(shelter_box, bullet_box)
+            };
+            alien_bs.retain(|b| {
+                let retain = f(b);
+                if !retain {
                     shelter_hit_times += 1;
-                    false
                 } else {
-                    true
                 }
+                retain
             });
-            shooter_bs.retain(|b| -> bool {
-                let bullet_box = (
-                    (b.x_pos, b.y_pos),
-                    (b.x_pos + b.width as i32, b.y_pos + b.height as i32),
-                );
-                if overlap(shelter_box, bullet_box) {
+            shooter_bs.retain(|b| {
+                let retain = f(b);
+                if !retain {
                     shelter_hit_times += 1;
-                    false
                 } else {
-                    true
                 }
+                retain
             });
 
             shelter.health -= shelter_hit_times;
@@ -288,16 +288,19 @@ impl Game {
         let aliens = &self.alien_group.aliens;
         let no_aliens = aliens.len();
         if no_aliens != 0 {
-            let rand = rand::thread_rng().gen_range(0..no_aliens);
-            let shooting_alien = aliens.get(rand).unwrap();
-            let bullet = Bullet {
-                x_pos: shooting_alien.x_pos + (shooting_alien.width as i32 / 2),
-                y_pos: shooting_alien.y_pos + shooting_alien.height as i32,
-                width: 2,
-                height: 10,
-                direction: Direction::Down,
-            };
-            self.alien_bullets.push(bullet);
+            let will_shoot = rand::thread_rng().gen_range(0..4) > 2;
+            if will_shoot {
+                let rand = rand::thread_rng().gen_range(0..no_aliens);
+                let shooting_alien = aliens.get(rand).unwrap();
+                let bullet = Bullet {
+                    x_pos: shooting_alien.x_pos + (shooting_alien.width as i32 / 2),
+                    y_pos: shooting_alien.y_pos + shooting_alien.height as i32,
+                    width: 2,
+                    height: 10,
+                    direction: Direction::Down,
+                };
+                self.alien_bullets.push(bullet);
+            }
         }
     }
 

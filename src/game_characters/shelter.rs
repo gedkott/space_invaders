@@ -1,4 +1,4 @@
-const SHELTER_HEALTH: i32 = 100;
+const SHELTER_HEALTH: i32 = 25;
 
 pub struct Shelter {
     pub x_pos: i32,
