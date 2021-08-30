@@ -70,23 +70,32 @@ impl Game {
         let aliens = &mut self.alien_group.aliens;
 
         let score_board = &mut self.score_board;
+        let shooter = &self.shooter;
 
         self.shooter_bullets.retain(|bullet| {
             let mut is_destroyed = false;
             aliens.retain(|alien| {
-                if bullet.y_pos <= alien.y_pos + alien.height as i32
-                    && bullet.y_pos >= alien.y_pos as i32
-                {
-                    if bullet.x_pos >= alien.x_pos
-                        && bullet.x_pos <= alien.x_pos + alien.width as i32
-                    {
-                        score_board.score += SCORE_INCREMENT;
+                let alien_x = alien.x_pos;
+                let alien_y = alien.y_pos;
+                let alien_box = (
+                    (alien_x, alien_y),
+                    (
+                        alien_x + shooter.width as i32,
+                        alien_y + shooter.height as i32,
+                    ),
+                );
+                let bullet_box = (
+                    (bullet.x_pos, bullet.y_pos),
+                    (
+                        bullet.x_pos + bullet.width as i32,
+                        bullet.y_pos + bullet.height as i32,
+                    ),
+                );
 
-                        is_destroyed = true;
-                        false
-                    } else {
-                        true
-                    }
+                if overlap(alien_box, bullet_box) {
+                    score_board.score += SCORE_INCREMENT;
+                    is_destroyed = true;
+                    false
                 } else {
                     true
                 }

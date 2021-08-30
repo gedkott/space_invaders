@@ -22,7 +22,7 @@ impl Shooter {
             width: shooter_width,
             height: shooter_height,
             direction: Direction::None,
-            health: SHOOTER_HEALTH
+            health: SHOOTER_HEALTH,
         }
     }
 
