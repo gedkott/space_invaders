@@ -21,7 +21,7 @@ pub struct Game {
     alien_bullets: Vec<Bullet>,
     score_board: ScoreBoard,
     event_pump: EventPump,
-    shelters: ShelterGroup,
+    shelter_group: ShelterGroup,
 }
 
 impl Default for Game {
@@ -61,7 +61,7 @@ impl Game {
             alien_bullets: vec![],
             score_board,
             event_pump,
-            shelters,
+            shelter_group: shelters,
         }
     }
 
@@ -137,7 +137,7 @@ impl Game {
 
         let alien_bs = &mut self.alien_bullets;
         let shooter_bs = &mut self.shooter_bullets;
-        for shelter in &mut self.shelters.shelters {
+        for shelter in &mut self.shelter_group.shelters {
             let mut shelter_hit_times = 0;
 
             let shelter_box = (
@@ -175,7 +175,7 @@ impl Game {
             shelter.health -= shelter_hit_times;
         }
 
-        self.shelters.shelters.retain(|s| s.health > 0);
+        self.shelter_group.shelters.retain(|s| s.health > 0);
     }
 
     fn process_key_presses(&mut self) {
@@ -239,7 +239,7 @@ impl Game {
             alien.render(&mut canvas);
         }
 
-        for shelter in &self.shelters.shelters {
+        for shelter in &self.shelter_group.shelters {
             shelter.render(&mut canvas);
         }
 
