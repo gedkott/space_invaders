@@ -8,10 +8,6 @@ pub struct Shelter {
     pub health: i32,
 }
 
-impl Shelter {
-    pub fn render(&mut self) {}
-}
-
 pub struct ShelterGroup {
     pub shelters: Vec<Shelter>,
 }
