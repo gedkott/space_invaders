@@ -1,6 +1,7 @@
 use crate::Direction;
 
 pub const SHOOTER_STEP_DISTANCE: i32 = 10;
+const SHOOTER_HEALTH: i32 = 50;
 
 pub struct Shooter {
     pub x_pos: i32,
@@ -8,6 +9,7 @@ pub struct Shooter {
     pub width: u32,
     pub height: u32,
     pub direction: crate::Direction,
+    pub health: i32,
 }
 
 impl Shooter {
@@ -20,6 +22,7 @@ impl Shooter {
             width: shooter_width,
             height: shooter_height,
             direction: Direction::None,
+            health: SHOOTER_HEALTH
         }
     }
 

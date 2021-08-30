@@ -24,7 +24,7 @@ pub enum Direction {
 
 pub struct ScoreBoard {
     pub score: usize,
-    pub remaining_health: usize,
+    pub remaining_health: i32,
 }
 
 impl Renderable for ScoreBoard {

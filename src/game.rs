@@ -13,8 +13,6 @@ use crate::{
 };
 
 const SCORE_INCREMENT: usize = 10;
-const SHOOTER_HEALTH: u32 = 50;
-
 pub struct Game {
     drawing_board: DrawingBoard,
     shooter: Shooter,
@@ -23,7 +21,6 @@ pub struct Game {
     alien_bullets: Vec<Bullet>,
     score_board: ScoreBoard,
     event_pump: EventPump,
-    shooter_hit_no: u32,
 }
 
 impl Default for Game {
@@ -61,7 +58,6 @@ impl Game {
             alien_bullets: vec![],
             score_board,
             event_pump,
-            shooter_hit_no: 0,
         }
     }
 
@@ -123,12 +119,8 @@ impl Game {
             }
         });
 
-        self.shooter_hit_no += shooter_hit_no;
-        score_board.remaining_health = if SHOOTER_HEALTH <= self.shooter_hit_no {
-            0
-        } else {
-            (SHOOTER_HEALTH - self.shooter_hit_no) as usize
-        };
+        self.shooter.health -= shooter_hit_no;
+        score_board.remaining_health = self.shooter.health;
     }
 
     fn process_key_presses(&mut self) {
@@ -194,7 +186,7 @@ impl Game {
 
         self.score_board.render(&mut canvas);
 
-        if self.shooter_hit_no >= SHOOTER_HEALTH {
+        if self.shooter.health <= 0 {
             // draw the "you dead" screen over everything; super stupid
             let dead_screen = DeadScreen;
             dead_screen.render(&mut canvas);
