@@ -34,3 +34,12 @@ impl Renderable for crate::game_characters::bullet::Bullet {
             .unwrap();
     }
 }
+
+impl Renderable for crate::game_characters::shelter::Shelter {
+    fn render(&self, canvas: &mut WindowCanvas) {
+        canvas.set_draw_color(Color::RGB(0, 102, 0));
+        canvas
+            .fill_rect(Rect::new(self.x_pos, self.y_pos, self.width, self.height))
+            .unwrap();
+    }
+}

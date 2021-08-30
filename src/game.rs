@@ -6,8 +6,8 @@ use sdl2::{event::Event, keyboard::Keycode, pixels::Color, EventPump};
 use crate::{
     game_characters::{
         alien::AlienGroup, alien::ALIEN_STEP_DISTANCE, bullet::Bullet,
-        bullet::BULLET_STEP_DISTANCE, renderers::Renderable, shooter::Shooter,
-        shooter::SHOOTER_STEP_DISTANCE,
+        bullet::BULLET_STEP_DISTANCE, renderers::Renderable, shelter::ShelterGroup,
+        shooter::Shooter, shooter::SHOOTER_STEP_DISTANCE,
     },
     DeadScreen, Direction, DrawingBoard, ScoreBoard,
 };
@@ -21,6 +21,7 @@ pub struct Game {
     alien_bullets: Vec<Bullet>,
     score_board: ScoreBoard,
     event_pump: EventPump,
+    shelters: ShelterGroup,
 }
 
 impl Default for Game {
@@ -50,6 +51,8 @@ impl Game {
 
         let event_pump = drawing_board.sdl_context.event_pump().unwrap();
 
+        let shelters = ShelterGroup::new();
+
         Game {
             drawing_board,
             shooter,
@@ -58,6 +61,7 @@ impl Game {
             alien_bullets: vec![],
             score_board,
             event_pump,
+            shelters,
         }
     }
 
@@ -130,6 +134,48 @@ impl Game {
 
         self.shooter.health -= shooter_hit_no;
         score_board.remaining_health = self.shooter.health;
+
+        let alien_bs = &mut self.alien_bullets;
+        let shooter_bs = &mut self.shooter_bullets;
+        for shelter in &mut self.shelters.shelters {
+            let mut shelter_hit_times = 0;
+
+            let shelter_box = (
+                (shelter.x_pos, shelter.y_pos),
+                (
+                    shelter.x_pos + shelter.width as i32,
+                    shelter.y_pos + shelter.height as i32,
+                ),
+            );
+            alien_bs.retain(|b| -> bool {
+                let bullet_box = (
+                    (b.x_pos, b.y_pos),
+                    (b.x_pos + b.width as i32, b.y_pos + b.height as i32),
+                );
+                if overlap(shelter_box, bullet_box) {
+                    shelter_hit_times += 1;
+                    false
+                } else {
+                    true
+                }
+            });
+            shooter_bs.retain(|b| -> bool {
+                let bullet_box = (
+                    (b.x_pos, b.y_pos),
+                    (b.x_pos + b.width as i32, b.y_pos + b.height as i32),
+                );
+                if overlap(shelter_box, bullet_box) {
+                    shelter_hit_times += 1;
+                    false
+                } else {
+                    true
+                }
+            });
+
+            shelter.health -= shelter_hit_times;
+        }
+
+        self.shelters.shelters.retain(|s| s.health > 0);
     }
 
     fn process_key_presses(&mut self) {
@@ -191,6 +237,10 @@ impl Game {
 
         for alien in self.alien_group.aliens.iter_mut() {
             alien.render(&mut canvas);
+        }
+
+        for shelter in &self.shelters.shelters {
+            shelter.render(&mut canvas);
         }
 
         self.score_board.render(&mut canvas);
