@@ -196,7 +196,7 @@ impl Game {
         self.score_board.render(&mut canvas);
 
         if self.shooter.health <= 0 {
-            // draw the "you dead" screen over everything; super stupid
+            // draw the "you dead" screen over everything; not a fan
             let dead_screen = DeadScreen;
             dead_screen.render(&mut canvas);
         }
