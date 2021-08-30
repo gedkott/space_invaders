@@ -8,12 +8,10 @@ pub struct Shelter {
     pub health: i32,
 }
 
-pub struct ShelterGroup {
-    pub shelters: Vec<Shelter>,
-}
+pub mod shelter_group {
+    use super::{Shelter, SHELTER_HEALTH};
 
-impl ShelterGroup {
-    pub fn new() -> Self {
+    pub fn new() -> Vec<Shelter> {
         let mut shelters = Vec::new();
         for i in 0..7 {
             let shelter_width = 100;
@@ -27,6 +25,6 @@ impl ShelterGroup {
             };
             shelters.push(shelter);
         }
-        ShelterGroup { shelters }
+        shelters
     }
 }

@@ -5,9 +5,14 @@ use sdl2::{event::Event, keyboard::Keycode, pixels::Color, EventPump};
 
 use crate::{
     game_characters::{
-        alien::AlienGroup, alien::ALIEN_STEP_DISTANCE, bullet::Bullet,
-        bullet::BULLET_STEP_DISTANCE, renderers::Renderable, shelter::ShelterGroup,
-        shooter::Shooter, shooter::SHOOTER_STEP_DISTANCE,
+        alien::ALIEN_STEP_DISTANCE,
+        alien::{alien_group, Alien},
+        bullet::Bullet,
+        bullet::BULLET_STEP_DISTANCE,
+        renderers::Renderable,
+        shelter::{shelter_group, Shelter},
+        shooter::Shooter,
+        shooter::SHOOTER_STEP_DISTANCE,
     },
     DeadScreen, Direction, DrawingBoard, ScoreBoard,
 };
@@ -16,12 +21,12 @@ const SCORE_INCREMENT: usize = 10;
 pub struct Game {
     drawing_board: DrawingBoard,
     shooter: Shooter,
-    alien_group: AlienGroup,
+    aliens: Vec<Alien>,
     shooter_bullets: Vec<Bullet>,
     alien_bullets: Vec<Bullet>,
     score_board: ScoreBoard,
     event_pump: EventPump,
-    shelter_group: ShelterGroup,
+    shelters: Vec<Shelter>,
 }
 
 impl Default for Game {
@@ -42,7 +47,7 @@ impl Game {
 
         let active_bullets: Vec<Bullet> = Vec::new();
 
-        let alien_group = AlienGroup::new();
+        let aliens = alien_group::new();
 
         let score_board = ScoreBoard {
             score: 0,
@@ -51,17 +56,17 @@ impl Game {
 
         let event_pump = drawing_board.sdl_context.event_pump().unwrap();
 
-        let shelters = ShelterGroup::new();
+        let shelters = shelter_group::new();
 
         Game {
             drawing_board,
             shooter,
-            alien_group,
+            aliens,
             shooter_bullets: active_bullets,
             alien_bullets: vec![],
             score_board,
             event_pump,
-            shelter_group: shelters,
+            shelters,
         }
     }
 
@@ -71,7 +76,7 @@ impl Game {
         // all locations on the bottom of any alien will have a y coordinate located at alien.y_pos + alien.height
         // if a bullet reaches that y and also on any x coordinate in alien.x_pos up until alien.x_pos + alien.width
         // is this O(n^2)?
-        let aliens = &mut self.alien_group.aliens;
+        let aliens = &mut self.aliens;
 
         let score_board = &mut self.score_board;
         let shooter = &self.shooter;
@@ -137,7 +142,7 @@ impl Game {
 
         let alien_bs = &mut self.alien_bullets;
         let shooter_bs = &mut self.shooter_bullets;
-        for shelter in &mut self.shelter_group.shelters {
+        for shelter in &mut self.shelters {
             let mut shelter_hit_times = 0;
 
             let shelter_box = (
@@ -175,7 +180,7 @@ impl Game {
             shelter.health -= shelter_hit_times;
         }
 
-        self.shelter_group.shelters.retain(|s| s.health > 0);
+        self.shelters.retain(|s| s.health > 0);
     }
 
     fn process_key_presses(&mut self) {
@@ -235,11 +240,11 @@ impl Game {
             bullet.render(&mut canvas);
         }
 
-        for alien in self.alien_group.aliens.iter_mut() {
+        for alien in self.aliens.iter_mut() {
             alien.render(&mut canvas);
         }
 
-        for shelter in &self.shelter_group.shelters {
+        for shelter in &self.shelters {
             shelter.render(&mut canvas);
         }
 
@@ -254,13 +259,13 @@ impl Game {
 
     fn manage_canvas_boundaries(&mut self) {
         // shift all aliens down and switch directions if any of them touched a side
-        if self.alien_group.aliens.iter().any(|alien| {
+        if self.aliens.iter().any(|alien| {
             alien.direction == Direction::DownLeft && alien.x_pos - ALIEN_STEP_DISTANCE <= 0
                 || alien.direction == Direction::DownRight
                     && alien.x_pos + alien.width as i32 + ALIEN_STEP_DISTANCE
                         >= self.drawing_board.canvas.viewport().width() as i32
         }) {
-            for alien in &mut self.alien_group.aliens {
+            for alien in &mut self.aliens {
                 // switch direction
                 alien.direction = if alien.direction == Direction::DownLeft {
                     Direction::DownRight
@@ -285,7 +290,7 @@ impl Game {
     }
 
     fn process_alien_shots(&mut self) {
-        let aliens = &self.alien_group.aliens;
+        let aliens = &self.aliens;
         let no_aliens = aliens.len();
         if no_aliens != 0 {
             let will_shoot = rand::thread_rng().gen_range(0..4) > 2;
@@ -341,7 +346,7 @@ impl Game {
             }
 
             // step aliens
-            for alien in self.alien_group.aliens.iter_mut() {
+            for alien in self.aliens.iter_mut() {
                 alien.step();
             }
 
