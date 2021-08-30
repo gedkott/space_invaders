@@ -1,5 +1,6 @@
 use std::{collections::HashSet, thread::sleep, time::Duration};
 
+use rand::Rng;
 use sdl2::{event::Event, keyboard::Keycode, pixels::Color, EventPump};
 
 use crate::{
@@ -8,16 +9,16 @@ use crate::{
         bullet::BULLET_STEP_DISTANCE, renderers::Renderable, shooter::Shooter,
         shooter::SHOOTER_STEP_DISTANCE,
     },
-    Direction, DrawingBoard, ScoreBoard,
+    DeadScreen, Direction, DrawingBoard, ScoreBoard,
 };
 
 const SCORE_INCREMENT: usize = 10;
-
 pub struct Game {
     drawing_board: DrawingBoard,
     shooter: Shooter,
     alien_group: AlienGroup,
-    bullets: Vec<Bullet>,
+    shooter_bullets: Vec<Bullet>,
+    alien_bullets: Vec<Bullet>,
     score_board: ScoreBoard,
     event_pump: EventPump,
 }
@@ -42,7 +43,10 @@ impl Game {
 
         let alien_group = AlienGroup::new();
 
-        let score_board = ScoreBoard { score: 0 };
+        let score_board = ScoreBoard {
+            score: 0,
+            remaining_health: 0,
+        };
 
         let event_pump = drawing_board.sdl_context.event_pump().unwrap();
 
@@ -50,7 +54,8 @@ impl Game {
             drawing_board,
             shooter,
             alien_group,
-            bullets: active_bullets,
+            shooter_bullets: active_bullets,
+            alien_bullets: vec![],
             score_board,
             event_pump,
         }
@@ -65,23 +70,32 @@ impl Game {
         let aliens = &mut self.alien_group.aliens;
 
         let score_board = &mut self.score_board;
+        let shooter = &self.shooter;
 
-        self.bullets.retain(|bullet| {
+        self.shooter_bullets.retain(|bullet| {
             let mut is_destroyed = false;
             aliens.retain(|alien| {
-                if bullet.y_pos <= alien.y_pos + alien.height as i32
-                    && bullet.y_pos >= alien.y_pos as i32
-                {
-                    if bullet.x_pos >= alien.x_pos
-                        && bullet.x_pos <= alien.x_pos + alien.width as i32
-                    {
-                        score_board.score += SCORE_INCREMENT;
+                let alien_x = alien.x_pos;
+                let alien_y = alien.y_pos;
+                let alien_box = (
+                    (alien_x, alien_y),
+                    (
+                        alien_x + shooter.width as i32,
+                        alien_y + shooter.height as i32,
+                    ),
+                );
+                let bullet_box = (
+                    (bullet.x_pos, bullet.y_pos),
+                    (
+                        bullet.x_pos + bullet.width as i32,
+                        bullet.y_pos + bullet.height as i32,
+                    ),
+                );
 
-                        is_destroyed = true;
-                        false
-                    } else {
-                        true
-                    }
+                if overlap(alien_box, bullet_box) {
+                    score_board.score += SCORE_INCREMENT;
+                    is_destroyed = true;
+                    false
                 } else {
                     true
                 }
@@ -89,9 +103,33 @@ impl Game {
             !is_destroyed
         });
 
-        // remove bullets that have/will reached the top
-        self.bullets
-            .retain(|bullet| bullet.y_pos - BULLET_STEP_DISTANCE >= 0);
+        let shooter = &self.shooter;
+        let mut shooter_hit_no = 0;
+        let shooter_x = shooter.x_pos;
+        let shooter_y = shooter.y_pos;
+        let shooter_box = (
+            (shooter_x, shooter_y),
+            (
+                shooter_x + shooter.width as i32,
+                shooter_y + shooter.height as i32,
+            ),
+        );
+        self.alien_bullets.retain(|b| {
+            let bullet_box = (
+                (b.x_pos, b.y_pos),
+                (b.x_pos + b.width as i32, b.y_pos + b.height as i32),
+            );
+
+            if overlap(shooter_box, bullet_box) {
+                shooter_hit_no += 1;
+                false
+            } else {
+                true
+            }
+        });
+
+        self.shooter.health -= shooter_hit_no;
+        score_board.remaining_health = self.shooter.health;
     }
 
     fn process_key_presses(&mut self) {
@@ -132,7 +170,7 @@ impl Game {
                 height: 10,
                 direction: Direction::Up,
             };
-            self.bullets.push(bullet);
+            self.shooter_bullets.push(bullet);
         }
     }
 
@@ -143,7 +181,11 @@ impl Game {
 
         self.shooter.render(&mut canvas);
 
-        for bullet in self.bullets.iter_mut() {
+        for bullet in self.shooter_bullets.iter_mut() {
+            bullet.render(&mut canvas);
+        }
+
+        for bullet in self.alien_bullets.iter_mut() {
             bullet.render(&mut canvas);
         }
 
@@ -151,7 +193,13 @@ impl Game {
             alien.render(&mut canvas);
         }
 
-        self.score_board.render(&mut canvas)
+        self.score_board.render(&mut canvas);
+
+        if self.shooter.health <= 0 {
+            // draw the "you dead" screen over everything; not a fan
+            let dead_screen = DeadScreen;
+            dead_screen.render(&mut canvas);
+        }
     }
 
     fn manage_canvas_boundaries(&mut self) {
@@ -171,13 +219,39 @@ impl Game {
                 };
 
                 // shift down
-                const ALIEN_VERTICAL_STEP_DISTANCE: i32 = 9;
+                const ALIEN_VERTICAL_STEP_DISTANCE: i32 = 18;
                 alien.y_pos += ALIEN_VERTICAL_STEP_DISTANCE as i32;
             }
         }
+
+        // remove bullets that have/will reached the top
+        self.shooter_bullets
+            .retain(|bullet| bullet.y_pos - BULLET_STEP_DISTANCE >= 0);
+
+        // remove bullets that have/will reached the bottom
+        let viewport_height = self.drawing_board.canvas.viewport().height();
+        self.alien_bullets
+            .retain(|bullet| bullet.y_pos + BULLET_STEP_DISTANCE <= viewport_height as i32);
     }
 
-    pub fn run(mut self) {
+    fn process_alien_shots(&mut self) {
+        let aliens = &self.alien_group.aliens;
+        let no_aliens = aliens.len();
+        if no_aliens != 0 {
+            let rand = rand::thread_rng().gen_range(0..no_aliens);
+            let shooting_alien = aliens.get(rand).unwrap();
+            let bullet = Bullet {
+                x_pos: shooting_alien.x_pos + (shooting_alien.width as i32 / 2),
+                y_pos: shooting_alien.y_pos + shooting_alien.height as i32,
+                width: 2,
+                height: 10,
+                direction: Direction::Down,
+            };
+            self.alien_bullets.push(bullet);
+        }
+    }
+
+    pub fn run(&mut self) {
         let mut i = 0;
 
         'running: loop {
@@ -201,8 +275,15 @@ impl Game {
 
             self.manage_canvas_boundaries();
 
+            self.process_alien_shots();
+
             // step remaining bullets
-            for bullet in self.bullets.iter_mut() {
+            for bullet in self.shooter_bullets.iter_mut() {
+                bullet.step();
+            }
+
+            // step remaining bullets
+            for bullet in self.alien_bullets.iter_mut() {
                 bullet.step();
             }
 
@@ -219,4 +300,11 @@ impl Game {
             sleep(Duration::new(0, 1_000_000_000u32 / 60));
         }
     }
+}
+
+fn overlap(one_box: ((i32, i32), (i32, i32)), other_box: ((i32, i32), (i32, i32))) -> bool {
+    one_box.0 .0 < other_box.1 .0
+        && one_box.1 .0 > other_box.0 .0
+        && one_box.0 .1 < other_box.1 .1
+        && one_box.1 .1 > other_box.0 .1
 }

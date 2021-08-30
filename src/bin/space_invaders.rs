@@ -1,7 +1,7 @@
 use space_invaders::game::Game;
 
 pub fn main() {
-    let game = Game::new();
+    let mut game = Game::new();
 
     game.run();
 }

@@ -1,4 +1,9 @@
-use sdl2::{pixels, rect::Rect, video::Window, Sdl};
+use sdl2::{
+    pixels::{self, Color},
+    rect::Rect,
+    video::Window,
+    Sdl,
+};
 
 use crate::game_characters::renderers::Renderable;
 
@@ -9,6 +14,7 @@ pub mod game;
 #[derive(PartialEq)]
 pub enum Direction {
     Up,
+    Down,
     Left,
     Right,
     None,
@@ -18,18 +24,22 @@ pub enum Direction {
 
 pub struct ScoreBoard {
     pub score: usize,
+    pub remaining_health: i32,
 }
 
 impl Renderable for ScoreBoard {
     fn render(&self, canvas: &mut sdl2::render::WindowCanvas) {
         canvas.set_draw_color(pixels::Color::RGB(204, 204, 0));
-        canvas.fill_rect(Rect::new(10, 10, 100, 100)).unwrap();
+        canvas.fill_rect(Rect::new(10, 10, 150, 75)).unwrap();
         let ttf_context = sdl2::ttf::init().unwrap();
         let font = ttf_context
-            .load_font("./fonts/OpenSans-Regular.ttf", 20)
+            .load_font("./fonts/OpenSans-Regular.ttf", 10)
             .unwrap();
         let surface = font
-            .render(&format!("Score: {}", self.score))
+            .render(&format!(
+                "Score: {}, Health: {}",
+                self.score, self.remaining_health
+            ))
             .solid(pixels::Color::RGB(255, 255, 255))
             .unwrap();
         let texture_creator = canvas.texture_creator();
@@ -37,7 +47,7 @@ impl Renderable for ScoreBoard {
             .create_texture_from_surface(&surface)
             .unwrap();
         canvas
-            .copy(&texture, None, Some(Rect::new(10, 10, 100, 100)))
+            .copy(&texture, None, Some(Rect::new(10, 10, 150, 75)))
             .unwrap();
     }
 }
@@ -67,5 +77,27 @@ impl DrawingBoard {
 impl Default for DrawingBoard {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+pub struct DeadScreen;
+
+impl Renderable for DeadScreen {
+    fn render(&self, canvas: &mut sdl2::render::WindowCanvas) {
+        canvas.set_draw_color(Color::RGB(74, 64, 4));
+        canvas.clear();
+        let ttf_context = sdl2::ttf::init().unwrap();
+        let font = ttf_context
+            .load_font("./fonts/OpenSans-Regular.ttf", 10)
+            .unwrap();
+        let surface = font
+            .render("YOU DEEEAAAD!")
+            .solid(pixels::Color::RGB(169, 92, 104))
+            .unwrap();
+        let texture_creator = canvas.texture_creator();
+        let texture = texture_creator
+            .create_texture_from_surface(&surface)
+            .unwrap();
+        canvas.copy(&texture, None, None).unwrap();
     }
 }
