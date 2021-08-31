@@ -84,22 +84,8 @@ impl Game {
         self.shooter_bullets.retain(|bullet| {
             let mut is_destroyed = false;
             aliens.retain(|alien| {
-                let alien_x = alien.x_pos;
-                let alien_y = alien.y_pos;
-                let alien_box = (
-                    (alien_x, alien_y),
-                    (
-                        alien_x + shooter.width as i32,
-                        alien_y + shooter.height as i32,
-                    ),
-                );
-                let bullet_box = (
-                    (bullet.x_pos, bullet.y_pos),
-                    (
-                        bullet.x_pos + bullet.width as i32,
-                        bullet.y_pos + bullet.height as i32,
-                    ),
-                );
+                let alien_box = alien.box_form();
+                let bullet_box = bullet.box_form();
 
                 if overlap(alien_box, bullet_box) {
                     score_board.score += SCORE_INCREMENT;
@@ -112,22 +98,11 @@ impl Game {
             !is_destroyed
         });
 
-        let shooter = &self.shooter;
         let mut shooter_hit_no = 0;
-        let shooter_x = shooter.x_pos;
-        let shooter_y = shooter.y_pos;
-        let shooter_box = (
-            (shooter_x, shooter_y),
-            (
-                shooter_x + shooter.width as i32,
-                shooter_y + shooter.height as i32,
-            ),
-        );
+
+        let shooter_box = shooter.box_form();
         self.alien_bullets.retain(|b| {
-            let bullet_box = (
-                (b.x_pos, b.y_pos),
-                (b.x_pos + b.width as i32, b.y_pos + b.height as i32),
-            );
+            let bullet_box = b.box_form();
 
             if overlap(shooter_box, bullet_box) {
                 shooter_hit_no += 1;
@@ -145,19 +120,10 @@ impl Game {
         for shelter in &mut self.shelters {
             let mut shelter_hit_times = 0;
 
-            let shelter_box = (
-                (shelter.x_pos, shelter.y_pos),
-                (
-                    shelter.x_pos + shelter.width as i32,
-                    shelter.y_pos + shelter.height as i32,
-                ),
-            );
+            let shelter_box = shelter.box_form();
 
             let f = |b: &Bullet| -> bool {
-                let bullet_box = (
-                    (b.x_pos, b.y_pos),
-                    (b.x_pos + b.width as i32, b.y_pos + b.height as i32),
-                );
+                let bullet_box = b.box_form();
                 !overlap(shelter_box, bullet_box)
             };
             alien_bs.retain(|b| {

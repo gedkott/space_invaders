@@ -50,6 +50,10 @@ impl Renderable for ScoreBoard {
             .copy(&texture, None, Some(Rect::new(10, 10, 150, 75)))
             .unwrap();
     }
+
+    fn box_form(&self) -> ((i32, i32), (i32, i32)) {
+        ((0, 0), (0, 0))
+    }
 }
 pub struct DrawingBoard {
     pub sdl_context: Sdl,
@@ -99,5 +103,9 @@ impl Renderable for DeadScreen {
             .create_texture_from_surface(&surface)
             .unwrap();
         canvas.copy(&texture, None, None).unwrap();
+    }
+
+    fn box_form(&self) -> ((i32, i32), (i32, i32)) {
+        ((0, 0), (0, 0))
     }
 }
