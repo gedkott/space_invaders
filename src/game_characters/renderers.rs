@@ -5,10 +5,6 @@ use sdl2::render::WindowCanvas;
 pub trait Renderable {
     fn render(&self, canvas: &mut WindowCanvas);
     fn box_form(&self) -> ((i32, i32), (i32, i32));
-    fn x_pos(&self) -> i32;
-    fn y_pos(&self) -> i32;
-    fn width(&self) -> i32;
-    fn height(&self) -> i32;
 }
 
 impl Renderable for crate::game_characters::shooter::Shooter {

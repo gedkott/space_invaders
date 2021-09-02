@@ -11,15 +11,31 @@ pub struct Shelter {
 pub mod shelter_group {
     use super::{Shelter, SHELTER_HEALTH};
 
-    pub fn new() -> Vec<Shelter> {
+    pub fn new(canvas_width: u32) -> Vec<Shelter> {
         let mut shelters = Vec::new();
-        for i in 0..7 {
-            let shelter_width = 100;
-            let shelter_height = 75;
+
+        let shelter_width = 75;
+        let shelter_height = 50;
+        let min_shelter_buff = 50;
+
+        let mut no_shelters = 0;
+        let mut room = canvas_width;
+        while room >= shelter_width + min_shelter_buff {
+            room -= shelter_width + min_shelter_buff;
+            no_shelters += 1;
+        }
+
+        // if there is extra room, we need to shift the shelters down by splitting the remaining room on left and right while accounting for buffer on left and extra space on right
+        let shift_amount = ((room + min_shelter_buff) / 2) as i32 - min_shelter_buff as i32;
+
+        for i in 0..no_shelters {
+            let x_pos = (i * (shelter_width + min_shelter_buff)) as i32
+                + min_shelter_buff as i32
+                + shift_amount;
             let shelter = Shelter {
-                x_pos: (i * (10 + shelter_width as i32)) + 10,
-                y_pos: (300 + shelter_height as i32) + 10,
-                width: shelter_width,
+                x_pos,
+                y_pos: (400 + shelter_height as i32) + 10,
+                width: shelter_width as u32,
                 height: shelter_height,
                 health: SHELTER_HEALTH,
             };

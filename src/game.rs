@@ -56,7 +56,7 @@ impl Game {
 
         let event_pump = drawing_board.sdl_context.event_pump().unwrap();
 
-        let shelters = shelter_group::new();
+        let shelters = shelter_group::new(canvas.viewport().width() as u32);
 
         Game {
             drawing_board,
