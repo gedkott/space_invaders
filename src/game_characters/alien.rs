@@ -24,12 +24,10 @@ impl Alien {
         }
     }
 }
-pub struct AlienGroup {
-    pub aliens: Vec<Alien>,
-}
+pub mod alien_group {
+    use super::{Alien, Direction};
 
-impl AlienGroup {
-    pub fn new() -> Self {
+    pub fn new() -> Vec<Alien> {
         let alien_width: u32 = 25;
         let alien_height = 25;
         let mut aliens = Vec::new();
@@ -45,6 +43,6 @@ impl AlienGroup {
                 aliens.push(alien);
             }
         }
-        AlienGroup { aliens }
+        aliens
     }
 }

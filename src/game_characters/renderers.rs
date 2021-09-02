@@ -4,6 +4,7 @@ use sdl2::render::WindowCanvas;
 
 pub trait Renderable {
     fn render(&self, canvas: &mut WindowCanvas);
+    fn box_form(&self) -> ((i32, i32), (i32, i32));
 }
 
 impl Renderable for crate::game_characters::shooter::Shooter {
@@ -12,6 +13,16 @@ impl Renderable for crate::game_characters::shooter::Shooter {
         canvas
             .fill_rect(Rect::new(self.x_pos, self.y_pos, self.width, self.height))
             .unwrap();
+    }
+
+    fn box_form(&self) -> ((i32, i32), (i32, i32)) {
+        (
+            (self.x_pos as i32, self.y_pos as i32),
+            (
+                self.x_pos as i32 + self.width as i32,
+                self.y_pos as i32 + self.height as i32,
+            ),
+        )
     }
 }
 
@@ -23,6 +34,16 @@ impl Renderable for crate::game_characters::alien::Alien {
             .fill_rect(Rect::new(self.x_pos, self.y_pos, self.width, self.height))
             .unwrap();
     }
+
+    fn box_form(&self) -> ((i32, i32), (i32, i32)) {
+        (
+            (self.x_pos as i32, self.y_pos as i32),
+            (
+                self.x_pos as i32 + self.width as i32,
+                self.y_pos as i32 + self.height as i32,
+            ),
+        )
+    }
 }
 
 impl Renderable for crate::game_characters::bullet::Bullet {
@@ -32,5 +53,34 @@ impl Renderable for crate::game_characters::bullet::Bullet {
         canvas
             .fill_rect(Rect::new(self.x_pos, self.y_pos, self.width, self.height))
             .unwrap();
+    }
+
+    fn box_form(&self) -> ((i32, i32), (i32, i32)) {
+        (
+            (self.x_pos as i32, self.y_pos as i32),
+            (
+                self.x_pos as i32 + self.width as i32,
+                self.y_pos as i32 + self.height as i32,
+            ),
+        )
+    }
+}
+
+impl Renderable for crate::game_characters::shelter::Shelter {
+    fn render(&self, canvas: &mut WindowCanvas) {
+        canvas.set_draw_color(Color::RGB(0, 102, 0));
+        canvas
+            .fill_rect(Rect::new(self.x_pos, self.y_pos, self.width, self.height))
+            .unwrap();
+    }
+
+    fn box_form(&self) -> ((i32, i32), (i32, i32)) {
+        (
+            (self.x_pos as i32, self.y_pos as i32),
+            (
+                self.x_pos as i32 + self.width as i32,
+                self.y_pos as i32 + self.height as i32,
+            ),
+        )
     }
 }

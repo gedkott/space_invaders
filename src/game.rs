@@ -5,8 +5,13 @@ use sdl2::{event::Event, keyboard::Keycode, pixels::Color, EventPump};
 
 use crate::{
     game_characters::{
-        alien::AlienGroup, alien::ALIEN_STEP_DISTANCE, bullet::Bullet,
-        bullet::BULLET_STEP_DISTANCE, renderers::Renderable, shooter::Shooter,
+        alien::ALIEN_STEP_DISTANCE,
+        alien::{alien_group, Alien},
+        bullet::Bullet,
+        bullet::BULLET_STEP_DISTANCE,
+        renderers::Renderable,
+        shelter::{shelter_group, Shelter},
+        shooter::Shooter,
         shooter::SHOOTER_STEP_DISTANCE,
     },
     DeadScreen, Direction, DrawingBoard, ScoreBoard,
@@ -16,11 +21,12 @@ const SCORE_INCREMENT: usize = 10;
 pub struct Game {
     drawing_board: DrawingBoard,
     shooter: Shooter,
-    alien_group: AlienGroup,
+    aliens: Vec<Alien>,
     shooter_bullets: Vec<Bullet>,
     alien_bullets: Vec<Bullet>,
     score_board: ScoreBoard,
     event_pump: EventPump,
+    shelters: Vec<Shelter>,
 }
 
 impl Default for Game {
@@ -41,7 +47,7 @@ impl Game {
 
         let active_bullets: Vec<Bullet> = Vec::new();
 
-        let alien_group = AlienGroup::new();
+        let aliens = alien_group::new();
 
         let score_board = ScoreBoard {
             score: 0,
@@ -50,14 +56,17 @@ impl Game {
 
         let event_pump = drawing_board.sdl_context.event_pump().unwrap();
 
+        let shelters = shelter_group::new(canvas.viewport().width() as u32);
+
         Game {
             drawing_board,
             shooter,
-            alien_group,
+            aliens,
             shooter_bullets: active_bullets,
             alien_bullets: vec![],
             score_board,
             event_pump,
+            shelters,
         }
     }
 
@@ -67,7 +76,7 @@ impl Game {
         // all locations on the bottom of any alien will have a y coordinate located at alien.y_pos + alien.height
         // if a bullet reaches that y and also on any x coordinate in alien.x_pos up until alien.x_pos + alien.width
         // is this O(n^2)?
-        let aliens = &mut self.alien_group.aliens;
+        let aliens = &mut self.aliens;
 
         let score_board = &mut self.score_board;
         let shooter = &self.shooter;
@@ -75,22 +84,8 @@ impl Game {
         self.shooter_bullets.retain(|bullet| {
             let mut is_destroyed = false;
             aliens.retain(|alien| {
-                let alien_x = alien.x_pos;
-                let alien_y = alien.y_pos;
-                let alien_box = (
-                    (alien_x, alien_y),
-                    (
-                        alien_x + shooter.width as i32,
-                        alien_y + shooter.height as i32,
-                    ),
-                );
-                let bullet_box = (
-                    (bullet.x_pos, bullet.y_pos),
-                    (
-                        bullet.x_pos + bullet.width as i32,
-                        bullet.y_pos + bullet.height as i32,
-                    ),
-                );
+                let alien_box = alien.box_form();
+                let bullet_box = bullet.box_form();
 
                 if overlap(alien_box, bullet_box) {
                     score_board.score += SCORE_INCREMENT;
@@ -103,22 +98,11 @@ impl Game {
             !is_destroyed
         });
 
-        let shooter = &self.shooter;
         let mut shooter_hit_no = 0;
-        let shooter_x = shooter.x_pos;
-        let shooter_y = shooter.y_pos;
-        let shooter_box = (
-            (shooter_x, shooter_y),
-            (
-                shooter_x + shooter.width as i32,
-                shooter_y + shooter.height as i32,
-            ),
-        );
+
+        let shooter_box = shooter.box_form();
         self.alien_bullets.retain(|b| {
-            let bullet_box = (
-                (b.x_pos, b.y_pos),
-                (b.x_pos + b.width as i32, b.y_pos + b.height as i32),
-            );
+            let bullet_box = b.box_form();
 
             if overlap(shooter_box, bullet_box) {
                 shooter_hit_no += 1;
@@ -130,6 +114,39 @@ impl Game {
 
         self.shooter.health -= shooter_hit_no;
         score_board.remaining_health = self.shooter.health;
+
+        let alien_bs = &mut self.alien_bullets;
+        let shooter_bs = &mut self.shooter_bullets;
+        for shelter in &mut self.shelters {
+            let mut shelter_hit_times = 0;
+
+            let shelter_box = shelter.box_form();
+
+            let f = |b: &Bullet| -> bool {
+                let bullet_box = b.box_form();
+                !overlap(shelter_box, bullet_box)
+            };
+            alien_bs.retain(|b| {
+                let retain = f(b);
+                if !retain {
+                    shelter_hit_times += 1;
+                } else {
+                }
+                retain
+            });
+            shooter_bs.retain(|b| {
+                let retain = f(b);
+                if !retain {
+                    shelter_hit_times += 1;
+                } else {
+                }
+                retain
+            });
+
+            shelter.health -= shelter_hit_times;
+        }
+
+        self.shelters.retain(|s| s.health > 0);
     }
 
     fn process_key_presses(&mut self) {
@@ -181,16 +198,20 @@ impl Game {
 
         self.shooter.render(&mut canvas);
 
-        for bullet in self.shooter_bullets.iter_mut() {
+        for bullet in &self.shooter_bullets {
             bullet.render(&mut canvas);
         }
 
-        for bullet in self.alien_bullets.iter_mut() {
+        for bullet in &self.alien_bullets {
             bullet.render(&mut canvas);
         }
 
-        for alien in self.alien_group.aliens.iter_mut() {
+        for alien in &self.aliens {
             alien.render(&mut canvas);
+        }
+
+        for shelter in &self.shelters {
+            shelter.render(&mut canvas);
         }
 
         self.score_board.render(&mut canvas);
@@ -204,13 +225,13 @@ impl Game {
 
     fn manage_canvas_boundaries(&mut self) {
         // shift all aliens down and switch directions if any of them touched a side
-        if self.alien_group.aliens.iter().any(|alien| {
+        if self.aliens.iter().any(|alien| {
             alien.direction == Direction::DownLeft && alien.x_pos - ALIEN_STEP_DISTANCE <= 0
                 || alien.direction == Direction::DownRight
                     && alien.x_pos + alien.width as i32 + ALIEN_STEP_DISTANCE
                         >= self.drawing_board.canvas.viewport().width() as i32
         }) {
-            for alien in &mut self.alien_group.aliens {
+            for alien in &mut self.aliens {
                 // switch direction
                 alien.direction = if alien.direction == Direction::DownLeft {
                     Direction::DownRight
@@ -235,19 +256,22 @@ impl Game {
     }
 
     fn process_alien_shots(&mut self) {
-        let aliens = &self.alien_group.aliens;
+        let aliens = &self.aliens;
         let no_aliens = aliens.len();
         if no_aliens != 0 {
-            let rand = rand::thread_rng().gen_range(0..no_aliens);
-            let shooting_alien = aliens.get(rand).unwrap();
-            let bullet = Bullet {
-                x_pos: shooting_alien.x_pos + (shooting_alien.width as i32 / 2),
-                y_pos: shooting_alien.y_pos + shooting_alien.height as i32,
-                width: 2,
-                height: 10,
-                direction: Direction::Down,
-            };
-            self.alien_bullets.push(bullet);
+            let will_shoot = rand::thread_rng().gen_range(0..4) > 2;
+            if will_shoot {
+                let rand = rand::thread_rng().gen_range(0..no_aliens);
+                let shooting_alien = aliens.get(rand).unwrap();
+                let bullet = Bullet {
+                    x_pos: shooting_alien.x_pos + (shooting_alien.width as i32 / 2),
+                    y_pos: shooting_alien.y_pos + shooting_alien.height as i32,
+                    width: 2,
+                    height: 10,
+                    direction: Direction::Down,
+                };
+                self.alien_bullets.push(bullet);
+            }
         }
     }
 
@@ -288,7 +312,7 @@ impl Game {
             }
 
             // step aliens
-            for alien in self.alien_group.aliens.iter_mut() {
+            for alien in self.aliens.iter_mut() {
                 alien.step();
             }
 
