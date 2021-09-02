@@ -198,15 +198,15 @@ impl Game {
 
         self.shooter.render(&mut canvas);
 
-        for bullet in self.shooter_bullets.iter_mut() {
+        for bullet in &self.shooter_bullets {
             bullet.render(&mut canvas);
         }
 
-        for bullet in self.alien_bullets.iter_mut() {
+        for bullet in &self.alien_bullets {
             bullet.render(&mut canvas);
         }
 
-        for alien in self.aliens.iter_mut() {
+        for alien in &self.aliens {
             alien.render(&mut canvas);
         }
 
