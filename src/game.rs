@@ -1,4 +1,4 @@
-use std::{collections::HashSet, thread::sleep, time::Duration};
+use std::{collections::HashSet, time::UNIX_EPOCH};
 
 use rand::Rng;
 use sdl2::{event::Event, keyboard::Keycode, pixels::Color, EventPump};
@@ -18,6 +18,8 @@ use crate::{
 };
 
 const SCORE_INCREMENT: usize = 10;
+const NS_PER_FRAME: f64 = std::time::Duration::from_secs(1).as_nanos() as f64 / 60.0;
+
 pub struct Game {
     drawing_board: DrawingBoard,
     shooter: Shooter,
@@ -149,9 +151,10 @@ impl Game {
         self.shelters.retain(|s| s.health > 0);
     }
 
-    fn process_key_presses(&mut self) {
+    fn process_key_presses(&mut self) -> (bool, bool) {
+        let mut go_left = false;
+        let mut go_right = false;
         let shooter = &mut self.shooter;
-        let canvas = &self.drawing_board.canvas;
         let pressed_keys: HashSet<Keycode> = self
             .event_pump
             .keyboard_state()
@@ -160,23 +163,11 @@ impl Game {
             .collect();
 
         if pressed_keys.contains(&Keycode::Right) {
-            shooter.direction = Direction::Right;
-
-            // step the shooter
-            if shooter.x_pos + SHOOTER_STEP_DISTANCE + shooter.width as i32
-                <= canvas.viewport().width() as i32
-            {
-                shooter.step();
-            }
+            go_right = true;
         }
 
         if pressed_keys.contains(&Keycode::Left) {
-            shooter.direction = Direction::Left;
-
-            // step the shooter
-            if shooter.x_pos - SHOOTER_STEP_DISTANCE >= 0 {
-                shooter.step();
-            }
+            go_left = true;
         }
 
         if pressed_keys.contains(&Keycode::Space) {
@@ -189,6 +180,8 @@ impl Game {
             };
             self.shooter_bullets.push(bullet);
         }
+
+        (go_left, go_right)
     }
 
     fn draw_screen(&mut self, i: u8) {
@@ -278,8 +271,38 @@ impl Game {
     pub fn run(&mut self) {
         let mut i = 0;
 
+        let mut previous_time = std::time::SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards")
+            .as_nanos();
+        let mut lag: f64 = 0.0;
+        let mut frames = 0;
+        let mut timer: f64 = 0.0;
+
         'running: loop {
-            i = (i + 1) % 255;
+            let current_time = std::time::SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("Time went backwards")
+                .as_nanos();
+            let elapsed_time = (current_time - previous_time) as f64;
+            timer += elapsed_time;
+            previous_time = current_time;
+            lag = lag + elapsed_time;
+
+            if timer >= std::time::Duration::from_secs(1).as_nanos() as f64 {
+                println!(
+                    "{:?}ms time has elapsed bringing timer to {:?}ms and lag to {:?}ms",
+                    elapsed_time / 1000000.0,
+                    timer / 1000000.0,
+                    lag / 1000000.0
+                );
+
+                println!("frames per second: {:?}", frames);
+                frames = 0;
+                timer = 0.0;
+            }
+
+            // PROCESS INPUT
 
             // watch out for events; specifically if the quit button (ESC) was pressed
             for event in self.event_pump.poll_iter() {
@@ -293,35 +316,75 @@ impl Game {
                 }
             }
 
-            self.process_key_presses();
+            let (go_left, go_right) = self.process_key_presses();
 
-            self.detect_collisions();
+            // END PROCESS INPUT
 
-            self.manage_canvas_boundaries();
+            while lag >= NS_PER_FRAME {
+                i = (i + 1) % 255;
 
-            self.process_alien_shots();
+                self.detect_collisions();
 
-            // step remaining bullets
-            for bullet in self.shooter_bullets.iter_mut() {
-                bullet.step();
+                self.manage_canvas_boundaries();
+
+                self.process_alien_shots();
+
+                if go_left {
+                    self.shooter.direction = Direction::Left;
+
+                    // step the shooter
+                    if self.shooter.x_pos - SHOOTER_STEP_DISTANCE >= 0 {
+                        self.shooter.step();
+                    }
+                }
+
+                if go_right {
+                    self.shooter.direction = Direction::Right;
+
+                    // step the shooter
+                    if self.shooter.x_pos + SHOOTER_STEP_DISTANCE + self.shooter.width as i32
+                        <= self.drawing_board.canvas.viewport().width() as i32
+                    {
+                        self.shooter.step();
+                    }
+                }
+
+                // step remaining bullets
+                for bullet in self.shooter_bullets.iter_mut() {
+                    bullet.step();
+                }
+
+                // step remaining bullets
+                for bullet in self.alien_bullets.iter_mut() {
+                    bullet.step();
+                }
+
+                // step aliens
+                for alien in self.aliens.iter_mut() {
+                    alien.step();
+                }
+
+                std::thread::sleep(std::time::Duration::from_millis(
+                    std::env::var("SLOW_CPU")
+                        .expect("need SLOW CPU ms sleep time")
+                        .parse::<u64>()
+                        .unwrap(),
+                ));
+
+                lag -= NS_PER_FRAME;
             }
-
-            // step remaining bullets
-            for bullet in self.alien_bullets.iter_mut() {
-                bullet.step();
-            }
-
-            // step aliens
-            for alien in self.aliens.iter_mut() {
-                alien.step();
-            }
-
             // draw
             self.draw_screen(i);
-            self.drawing_board.canvas.present();
 
-            // sleep?
-            sleep(Duration::new(0, 1_000_000_000u32 / 60));
+            std::thread::sleep(std::time::Duration::from_millis(
+                std::env::var("SLOW_RENDER")
+                    .expect("need SLOW RENDER ms sleep time")
+                    .parse::<u64>()
+                    .unwrap(),
+            ));
+
+            self.drawing_board.canvas.present();
+            frames += 1;
         }
     }
 }
